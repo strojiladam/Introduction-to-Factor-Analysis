@@ -189,7 +189,10 @@
                 transparent: true, 
                 opacity: 0.2, 
                 side: THREE.DoubleSide,
-                depthWrite: false
+                depthWrite: false,
+                polygonOffset: true,
+                polygonOffsetFactor: -1,
+                polygonOffsetUnits: -1
             });
             group.add(new THREE.Mesh(geometry, material));
 
