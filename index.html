@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistical Visualization Tools</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Subtle animated background */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 50%);
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+            border-color: #3b82f6;
+        }
+
+        .card:hover .icon-container {
+            transform: scale(1.1);
+        }
+
+        .icon-container {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="max-w-4xl w-full p-8 z-10">
+        <div class="text-center mb-16">
+            <h1
+                class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 mb-6 tracking-tight">
+                Introduction to Factor Analysis
+            </h1>
+            <p class="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                Browser-based tools for exploring and understanding linear algebra and factor analysis.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Applet 1 -->
+            <a href="faapplet.html"
+                class="card rounded-2xl p-8 flex flex-col no-underline text-white relative overflow-hidden group">
+                <div
+                    class="icon-container h-14 w-14 rounded-xl bg-blue-500/20 flex items-center justify-center mb-6 border border-blue-500/30">
+                    <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-semibold mb-3">Factor Analysis Applet</h2>
+                <p class="text-slate-400 mb-8 flex-grow leading-relaxed">
+                    Step-by-step matrix multiplication visualizer for orthogonal and oblique factor models. Toggle
+                    seamlessly between algebraic symbols and concrete numeric matrices.
+                </p>
+                <div class="text-blue-400 font-medium flex items-center group-hover:text-blue-300 transition-colors">
+                    Launch Applet
+                    <svg class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- Applet 2 -->
+            <a href="partcor.html"
+                class="card rounded-2xl p-8 flex flex-col no-underline text-white relative overflow-hidden group">
+                <div
+                    class="icon-container h-14 w-14 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/30">
+                    <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5">
+                        </path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-semibold mb-3">3D Correlation Geometry</h2>
+                <p class="text-slate-400 mb-8 flex-grow leading-relaxed">
+                    An interactive 3D visualizer demonstrating partial and semi-partial correlations by projecting
+                    vectors (variables) onto orthogonal planes to control for covariates.
+                </p>
+                <div
+                    class="text-emerald-400 font-medium flex items-center group-hover:text-emerald-300 transition-colors">
+                    Launch Visualizer
+                    <svg class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
+                </div>
+            </a>
+        </div>
+
+        <div class="text-center mt-16 pt-8 border-t border-slate-800 text-slate-500 text-sm">
+            <p>Department of Psychology, FSS MUNI</p>
+        </div>
+    </div>
+
+</body>
+
+</html>

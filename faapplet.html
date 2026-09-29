@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factor Analysis Matrix Operations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+            loader: {load: ['[tex]/color']},
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                packages: { '[+]': ['color'] }
+            },
+            startup: {
+                typeset: false // Manual typesetting for dynamic content
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Matrix Container Styling */
+        .matrix-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 0.5rem;
+            transition: all 0.4s ease;
+        }
+
+        .matrix-label {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #475569;
+        }
+
+        .matrix-container {
+            position: relative;
+            padding: 0.25rem 0.75rem;
+            display: inline-block;
+        }
+
+        .matrix-container::before,
+        .matrix-container::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            border: 2px solid #1e293b;
+        }
+
+        .matrix-container::before {
+            left: 0;
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .matrix-container::after {
+            right: 0;
+            border-left: none;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .matrix-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.5rem;
+            height: 2.5rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s ease;
+            font-size: 1.05rem;
+            cursor: default;
+        }
+
+        /* Interaction and Highlight Colors (Matching standard LaTeX colors) */
+        .sigma-cell {
+            cursor: pointer;
+        }
+
+        .sigma-cell:hover:not(.highlight-sigma) {
+            background-color: #e2e8f0;
+        }
+
+        .highlight-lambda {
+            background-color: #dbeafe;
+            box-shadow: 0 0 0 2px #93c5fd;
+            z-index: 5;
+            color: #1d4ed8;
+        }
+
+        /* blue */
+        .highlight-phi {
+            background-color: #ffedd5;
+            box-shadow: 0 0 0 2px #fdba74;
+            z-index: 5;
+            color: #c2410c;
+        }
+
+        /* orange */
+        .highlight-lambda-t {
+            background-color: #fee2e2;
+            box-shadow: 0 0 0 2px #fca5a5;
+            z-index: 5;
+            color: #b91c1c;
+        }
+
+        /* red */
+        .highlight-psi {
+            background-color: #dcfce7;
+            box-shadow: 0 0 0 2px #86efac;
+            z-index: 5;
+            color: #15803d;
+        }
+
+        /* green */
+        .highlight-sigma {
+            background-color: #f3e8ff;
+            box-shadow: 0 0 0 2px #d8b4fe;
+            transform: scale(1.08);
+            z-index: 10;
+            color: #7e22ce;
+            font-weight: 600;
+        }
+
+        /* purple */
+
+        .operator {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            margin-top: 2rem;
+        }
+
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #6366f1;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #6366f1;
+        }
+
+        .equation-area {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Unified Top Control Bar -->
+    <header
+        class="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap justify-between items-center shadow-sm z-20 shrink-0 gap-y-3">
+
+        <!-- Formula Display -->
+        <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+            <div id="formula-display"
+                class="text-lg bg-slate-50 px-4 py-1.5 rounded border border-slate-200 text-slate-800 font-medium min-w-[150px] text-center">
+                <!-- Injected via MathJax -->
+            </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="flex flex-wrap items-center justify-center gap-4">
+            <!-- Data Mode Toggle (Abstract/Concrete) -->
+            <div class="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                <span class="mr-3 text-sm font-medium text-slate-600" id="label-abstract">Abstract</span>
+                <div class="relative inline-block w-11 mr-2 align-middle select-none">
+                    <input type="checkbox" id="data-toggle"
+                        class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-transform duration-300 ease-in-out z-10 top-0.5" />
+                    <label for="data-toggle"
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                </div>
+                <span class="ml-1 text-sm font-medium text-slate-400" id="label-concrete">Concrete</span>
+            </div>
+
+            <!-- Orthogonal Mode Toggle -->
+            <div class="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                <span class="mr-3 text-sm font-medium text-slate-600" id="label-ortho">Orthogonal</span>
+                <div class="relative inline-block w-11 mr-2 align-middle select-none">
+                    <input type="checkbox" id="mode-toggle"
+                        class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-transform duration-300 ease-in-out z-10 top-0.5" />
+                    <label for="mode-toggle"
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                </div>
+                <span class="ml-1 text-sm font-medium text-slate-400" id="label-oblique">Oblique</span>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex items-center justify-center gap-2 w-full md:w-auto">
+            <button id="btn-prev"
+                class="px-4 py-2 bg-white border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors shadow-sm">
+                &larr; Prev Cell
+            </button>
+            <button id="btn-next"
+                class="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm">
+                Next Cell &rarr;
+            </button>
+        </div>
+    </header>
+
+    <!-- Matrix Visualization Canvas -->
+    <main
+        class="flex-grow flex flex-col items-center justify-start overflow-y-auto overflow-x-hidden relative bg-slate-50/50">
+        <div class="w-full flex-grow flex items-center justify-center p-4 min-h-[300px]">
+            <div class="flex flex-row items-start justify-center gap-1 md:gap-3 scale-90 lg:scale-100 origin-center transition-all"
+                id="matrix-canvas">
+
+                <!-- Lambda Matrix -->
+                <div class="matrix-wrapper">
+                    <span class="matrix-label">\(\Lambda\)</span>
+                    <div class="matrix-container">
+                        <div class="grid grid-cols-2 gap-1" id="matrix-lambda"></div>
+                    </div>
+                </div>
+
+                <!-- Phi Matrix -->
+                <div class="matrix-wrapper" id="wrapper-phi"
+                    style="display: none; opacity: 0; width: 0; overflow: hidden; margin: 0;">
+                    <span class="matrix-label">\(\Phi\)</span>
+                    <div class="matrix-container">
+                        <div class="grid grid-cols-2 gap-1" id="matrix-phi"></div>
+                    </div>
+                </div>
+
+                <!-- Lambda Transpose Matrix -->
+                <div class="matrix-wrapper">
+                    <span class="matrix-label">\(\Lambda'\)</span>
+                    <div class="matrix-container">
+                        <div class="grid grid-cols-4 gap-1" id="matrix-lambda-t"></div>
+                    </div>
+                </div>
+
+                <div class="operator">\(+\)</div>
+
+                <!-- Psi Matrix (Uniqueness) -->
+                <div class="matrix-wrapper">
+                    <span class="matrix-label">\(\Psi\)</span>
+                    <div class="matrix-container">
+                        <div class="grid grid-cols-4 gap-1" id="matrix-psi"></div>
+                    </div>
+                </div>
+
+                <div class="operator">\(=\)</div>
+
+                <!-- Sigma Matrix -->
+                <div class="matrix-wrapper">
+                    <span class="matrix-label text-purple-700">\(\Sigma\)</span>
+                    <div class="matrix-container bg-white shadow-sm border border-purple-200 rounded">
+                        <div class="grid grid-cols-4 gap-1" id="matrix-sigma"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Equation Area -->
+        <div class="w-full bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0 flex flex-col z-10"
+            style="min-height: 200px; max-height: 35vh;">
+
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-2 flex justify-center items-center shrink-0">
+                <div class="text-sm font-medium text-slate-600 flex items-center gap-2">
+                    Calculating: <span id="eq-title" class="font-bold"></span>
+                </div>
+            </div>
+
+            <div class="p-4 flex-grow flex items-center justify-center overflow-auto equation-area">
+                <div id="equation-display" class="text-center w-full py-4">
+                    <!-- Equation injected via JS -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Matrix Dimensions
+        const nVars = 4;
+        const nFactors = 2;
+
+        // Application State
+        let isOrthogonal = true;
+        let isNumeric = false;
+        let currentStepIndex = 0;
+        let mathJaxQueue = Promise.resolve(); // Queue to prevent overlapping MathJax errors
+
+        // Concrete Numeric Data
+        const numLambda = [
+            [0.80, 0.10],
+            [0.70, 0.20],
+            [0.10, 0.90],
+            [0.20, 0.80]
+        ];
+        const numPhiOblique = [
+            [1.00, 0.50],
+            [0.50, 1.00]
+        ];
+        const numPsi = [0.35, 0.47, 0.18, 0.32]; // Unique variances
+
+        // Calculate Sigma specific value dynamically for Concrete Mode
+        function calcSigma(r, c) {
+            const L = numLambda;
+            const P = isOrthogonal ? [[1, 0], [0, 1]] : numPhiOblique;
+            const U = (r === c) ? numPsi[r - 1] : 0;
+
+            let sum = 0;
+            sum += L[r - 1][0] * P[0][0] * L[c - 1][0];
+            sum += L[r - 1][1] * P[1][1] * L[c - 1][1];
+            sum += L[r - 1][0] * P[0][1] * L[c - 1][1];
+            sum += L[r - 1][1] * P[1][0] * L[c - 1][0];
+            sum += U;
+            return sum.toFixed(2);
+        }
+
+        // Define sequence of calculation steps
+        const steps = [];
+        for (let r = 1; r <= nVars; r++) {
+            for (let c = 1; c <= nVars; c++) {
+                steps.push({ r, c, isVar: r === c });
+            }
+        }
+
+        // Helpers to generate LaTeX strings based on current mode
+        const getLambda = (r, c) => isNumeric ? numLambda[r - 1][c - 1].toFixed(2) : `\\lambda_{${r}${c}}`;
+        const getPhi = (r, c) => {
+            if (isOrthogonal) return r === c ? "1" : "0";
+            return isNumeric ? numPhiOblique[r - 1][c - 1].toFixed(2) : (r === c ? "1" : `\\phi_{${r}${c}}`);
+        };
+        const getPsi = (r) => isNumeric ? numPsi[r - 1].toFixed(2) : `\\psi_{${r}}`;
+        const getSigma = (r, c) => isNumeric ? calcSigma(r, c) : `\\sigma_{${r}${c}}`;
+
+        function buildMatricesDOM() {
+            // Lambda
+            let htmlLambda = '';
+            for (let r = 1; r <= nVars; r++) {
+                for (let c = 1; c <= nFactors; c++) {
+                    htmlLambda += `<div class="matrix-cell" data-matrix="lambda" data-row="${r}" data-col="${c}">\\(${getLambda(r, c)}\\)</div>`;
+                }
+            }
+            document.getElementById('matrix-lambda').innerHTML = htmlLambda;
+
+            // Phi
+            let htmlPhi = '';
+            for (let r = 1; r <= nFactors; r++) {
+                for (let c = 1; c <= nFactors; c++) {
+                    htmlPhi += `<div class="matrix-cell ${r === c && !isNumeric ? 'text-slate-400' : ''}" data-matrix="phi" data-row="${r}" data-col="${c}">\\(${getPhi(r, c)}\\)</div>`;
+                }
+            }
+            document.getElementById('matrix-phi').innerHTML = htmlPhi;
+
+            // Lambda Transpose
+            let htmlLambdaT = '';
+            for (let r = 1; r <= nFactors; r++) {
+                for (let c = 1; c <= nVars; c++) {
+                    htmlLambdaT += `<div class="matrix-cell" data-matrix="lambda-t" data-row="${r}" data-col="${c}">\\(${getLambda(c, r)}\\)</div>`;
+                }
+            }
+            document.getElementById('matrix-lambda-t').innerHTML = htmlLambdaT;
+
+            // Psi (Uniqueness)
+            let htmlPsi = '';
+            for (let r = 1; r <= nVars; r++) {
+                for (let c = 1; c <= nVars; c++) {
+                    let content = r === c ? `\\(${getPsi(r)}\\)` : (isNumeric ? `\\(0.00\\)` : `\\(0\\)`);
+                    htmlPsi += `<div class="matrix-cell ${r !== c ? 'opacity-30' : ''}" data-matrix="psi" data-row="${r}" data-col="${c}">${content}</div>`;
+                }
+            }
+            document.getElementById('matrix-psi').innerHTML = htmlPsi;
+
+            // Sigma
+            let htmlSigma = '';
+            for (let r = 1; r <= nVars; r++) {
+                for (let c = 1; c <= nVars; c++) {
+                    htmlSigma += `<div class="matrix-cell sigma-cell" data-matrix="sigma" data-row="${r}" data-col="${c}">\\(${getSigma(r, c)}\\)</div>`;
+                }
+            }
+            document.getElementById('matrix-sigma').innerHTML = htmlSigma;
+
+            // Attach listeners to interactive sigma cells
+            document.querySelectorAll('.sigma-cell').forEach((cell, index) => {
+                cell.addEventListener('click', () => {
+                    currentStepIndex = index;
+                    updateVisualization();
+                });
+            });
+        }
+
+        function updateVisualization() {
+            // Reset Highlights
+            document.querySelectorAll('.matrix-cell').forEach(c => c.classList.remove('highlight-lambda', 'highlight-phi', 'highlight-lambda-t', 'highlight-psi', 'highlight-sigma'));
+
+            const step = steps[currentStepIndex];
+            const r = step.r;
+            const c = step.c;
+
+            // Update UI State
+            document.getElementById('btn-prev').disabled = currentStepIndex === 0;
+            document.getElementById('btn-next').disabled = currentStepIndex === steps.length - 1;
+
+            // Build Title with MathJax
+            const typeStr = step.isVar ? `Variance of Item ${r}` : `Covariance (Item ${r}, Item ${c})`;
+            // Using standard color name 'purple' to avoid macro errors
+            document.getElementById('eq-title').innerHTML = `\\(\\color{purple}{\\sigma_{${r}${c}}}\\) [${typeStr}]`;
+
+            // Apply HTML Class Highlights
+            document.querySelector(`[data-matrix="sigma"][data-row="${r}"][data-col="${c}"]`).classList.add('highlight-sigma');
+            document.querySelectorAll(`[data-matrix="lambda"][data-row="${r}"]`).forEach(el => el.classList.add('highlight-lambda'));
+            document.querySelectorAll(`[data-matrix="lambda-t"][data-col="${c}"]`).forEach(el => el.classList.add('highlight-lambda-t'));
+
+            if (step.isVar) {
+                document.querySelector(`[data-matrix="psi"][data-row="${r}"][data-col="${c}"]`).classList.add('highlight-psi');
+            }
+
+            if (!isOrthogonal) {
+                document.querySelectorAll(`[data-matrix="phi"]`).forEach(el => el.classList.add('highlight-phi'));
+            }
+
+            // Build Equation using STANDARD LaTeX colors ONLY (CRITICAL FIX)
+            let eqLatex = `\\[ \\color{purple}{${getSigma(r, c)}} = `;
+
+            if (isOrthogonal) {
+                eqLatex += `(\\color{blue}{${getLambda(r, 1)}} \\cdot \\color{red}{${getLambda(c, 1)}}) + `;
+                eqLatex += `(\\color{blue}{${getLambda(r, 2)}} \\cdot \\color{red}{${getLambda(c, 2)}})`;
+            } else {
+                eqLatex += `(\\color{blue}{${getLambda(r, 1)}} \\cdot \\color{orange}{${getPhi(1, 1)}} \\cdot \\color{red}{${getLambda(c, 1)}}) + `;
+                eqLatex += `(\\color{blue}{${getLambda(r, 2)}} \\cdot \\color{orange}{${getPhi(2, 2)}} \\cdot \\color{red}{${getLambda(c, 2)}}) + `;
+                eqLatex += `(\\color{blue}{${getLambda(r, 1)}} \\cdot \\color{orange}{${getPhi(1, 2)}} \\cdot \\color{red}{${getLambda(c, 2)}}) + `;
+                eqLatex += `(\\color{blue}{${getLambda(r, 2)}} \\cdot \\color{orange}{${getPhi(2, 1)}} \\cdot \\color{red}{${getLambda(c, 1)}})`;
+            }
+
+            if (step.isVar) {
+                eqLatex += ` + \\color{green}{${getPsi(r)}}`;
+            }
+
+            eqLatex += ` \\]`;
+
+            document.getElementById('equation-display').innerHTML = eqLatex;
+
+            // Trigger MathJax render for specific dynamic areas safely via queue
+            if (window.MathJax && MathJax.typesetPromise) {
+                mathJaxQueue = mathJaxQueue.then(() => {
+                    return MathJax.typesetPromise([
+                        document.getElementById('eq-title'),
+                        document.getElementById('equation-display')
+                    ]);
+                }).catch((err) => console.log('MathJax typeset error:', err));
+            }
+        }
+
+        function syncUIAndRender() {
+            // Update Header Formula (using Psi instead of Theta)
+            const formulaDiv = document.getElementById('formula-display');
+            formulaDiv.innerHTML = isOrthogonal ? `\\(\\Sigma = \\Lambda\\Lambda' + \\Psi\\)` : `\\(\\Sigma = \\Lambda\\Phi\\Lambda' + \\Psi\\)`;
+
+            // Update Label Styles
+            document.getElementById('label-abstract').className = !isNumeric ? "mr-3 text-sm font-medium text-slate-800" : "mr-3 text-sm font-medium text-slate-400";
+            document.getElementById('label-concrete').className = isNumeric ? "ml-1 text-sm font-medium text-slate-800" : "ml-1 text-sm font-medium text-slate-400";
+
+            document.getElementById('label-ortho').className = isOrthogonal ? "mr-3 text-sm font-medium text-slate-800" : "mr-3 text-sm font-medium text-slate-400";
+            document.getElementById('label-oblique').className = !isOrthogonal ? "ml-1 text-sm font-medium text-slate-800" : "ml-1 text-sm font-medium text-slate-400";
+
+            // Handle Oblique UI toggles
+            const wrapperPhi = document.getElementById('wrapper-phi');
+
+            if (isOrthogonal) {
+                wrapperPhi.style.opacity = '0';
+                wrapperPhi.style.width = '0px';
+                wrapperPhi.style.margin = '0px';
+                setTimeout(() => {
+                    wrapperPhi.style.display = 'none';
+                }, 300);
+            } else {
+                wrapperPhi.style.display = 'flex';
+                void wrapperPhi.offsetWidth; // Force reflow
+                wrapperPhi.style.width = 'auto';
+                wrapperPhi.style.margin = '0 0.5rem';
+                wrapperPhi.style.opacity = '1';
+            }
+
+            // Rebuild DOM with new symbols/numbers
+            buildMatricesDOM();
+
+            // Queue full canvas MathJax re-render
+            if (window.MathJax && MathJax.typesetPromise) {
+                mathJaxQueue = mathJaxQueue.then(() => {
+                    return MathJax.typesetPromise([
+                        document.getElementById('formula-display'),
+                        document.getElementById('matrix-canvas')
+                    ]);
+                }).then(() => {
+                    // Update highlights and equations after matrices finish rendering
+                    updateVisualization();
+                }).catch((err) => console.log('MathJax typeset error:', err));
+            } else {
+                updateVisualization();
+            }
+        }
+
+        // Listeners for Toggles
+        document.getElementById('mode-toggle').addEventListener('change', (e) => {
+            isOrthogonal = !e.target.checked;
+            syncUIAndRender();
+        });
+
+        document.getElementById('data-toggle').addEventListener('change', (e) => {
+            isNumeric = e.target.checked;
+            syncUIAndRender();
+        });
+
+        // Listeners for Navigation Buttons
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            if (currentStepIndex > 0) { currentStepIndex--; updateVisualization(); }
+        });
+        document.getElementById('btn-next').addEventListener('click', () => {
+            if (currentStepIndex < steps.length - 1) { currentStepIndex++; updateVisualization(); }
+        });
+
+        // Keyboard Navigation Support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                if (currentStepIndex < steps.length - 1) { currentStepIndex++; updateVisualization(); }
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                if (currentStepIndex > 0) { currentStepIndex--; updateVisualization(); }
+            }
+        });
+
+        // Initialize Applet on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Force checkbox reset (browsers sometimes cache input state)
+            document.getElementById('mode-toggle').checked = false;
+            document.getElementById('data-toggle').checked = false;
+
+            // Wait slightly for MathJax to initialize its global object on fast loads
+            setTimeout(syncUIAndRender, 150);
+        });
+
+    </script>
+</body>
+
+</html>
