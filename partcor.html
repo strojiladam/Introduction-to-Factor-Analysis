@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,18 +8,83 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        #ui-container { position: absolute; top: 0; left: 0; z-index: 10; width: 100%; padding: 1.5rem; pointer-events: none; }
-        .pointer-events-auto { pointer-events: auto; }
-        .btn { transition: all 0.2s; }
-        .btn-active { background-color: #3b82f6; border-color: #2563eb; color: white; }
-        .btn-inactive { background-color: #1e293b; border-color: #334155; color: #cbd5e1; }
-        .btn-inactive:hover { background-color: #334155; }
-        
-        .legend-item { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; font-size: 0.875rem; }
-        .legend-color { width: 1rem; height: 1rem; border-radius: 0.25rem; }
-        .correlation-label { background: rgba(15, 23, 42, 0.85); padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(4px); margin-top: -10px; pointer-events: none; }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            width: 100%;
+            padding: 1.5rem;
+            pointer-events: none;
+        }
+
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        .btn {
+            transition: all 0.2s;
+        }
+
+        .btn-active {
+            background-color: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+        }
+
+        .btn-inactive {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #cbd5e1;
+        }
+
+        .btn-inactive:hover {
+            background-color: #334155;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .legend-color {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 0.25rem;
+        }
+
+        .correlation-label {
+            background: rgba(15, 23, 42, 0.85);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            margin-top: -10px;
+            pointer-events: none;
+        }
     </style>
     <!-- Three.js and OrbitControls -->
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
@@ -31,26 +97,31 @@
       }
     </script>
 </head>
+
 <body>
 
     <div id="canvas-container"></div>
 
     <div id="ui-container" class="flex flex-col md:flex-row justify-between items-start gap-4">
         <!-- Controls -->
-        <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700 p-5 rounded-xl pointer-events-auto max-w-sm w-full shadow-2xl">
+        <div
+            class="bg-slate-900/80 backdrop-blur-md border border-slate-700 p-5 rounded-xl pointer-events-auto max-w-sm w-full shadow-2xl">
             <h1 class="text-xl font-semibold mb-1 text-white">Correlation Visualizer</h1>
             <p class="text-sm text-slate-400 mb-5">Geometric representation of variables in subject space.</p>
-            
+
             <div class="flex flex-col gap-2 mb-6">
-                <button id="btn-none" class="btn btn-active px-4 py-2 rounded border text-sm font-medium w-full text-left flex justify-between items-center">
+                <button id="btn-none"
+                    class="btn btn-active px-4 py-2 rounded border text-sm font-medium w-full text-left flex justify-between items-center">
                     <span>1. Original Vectors</span>
                     <span class="text-xs opacity-70">Zero-order</span>
                 </button>
-                <button id="btn-partial" class="btn btn-inactive px-4 py-2 rounded border text-sm font-medium w-full text-left flex justify-between items-center">
+                <button id="btn-partial"
+                    class="btn btn-inactive px-4 py-2 rounded border text-sm font-medium w-full text-left flex justify-between items-center">
                     <span>2. Partial Correlation</span>
                     <span class="text-xs opacity-70">X and Y without Z</span>
                 </button>
-                <button id="btn-semi" class="btn btn-inactive px-4 py-2 rounded border text-sm font-medium w-full text-left flex justify-between items-center">
+                <button id="btn-semi"
+                    class="btn btn-inactive px-4 py-2 rounded border text-sm font-medium w-full text-left flex justify-between items-center">
                     <span>3. Semi-Partial Correlation</span>
                     <span class="text-xs opacity-70">X and (Y without Z)</span>
                 </button>
@@ -58,22 +129,31 @@
 
             <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
                 <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Legend</h2>
-                <div class="legend-item"><div class="legend-color bg-red-500"></div> Variable X</div>
-                <div class="legend-item"><div class="legend-color bg-blue-500"></div> Variable Y</div>
-                <div class="legend-item"><div class="legend-color bg-green-500"></div> Covariate Z</div>
+                <div class="legend-item">
+                    <div class="legend-color bg-red-500"></div> Variable X
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color bg-blue-500"></div> Variable Y
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color bg-green-500"></div> Covariate Z
+                </div>
                 <div id="legend-dynamic"></div>
             </div>
-            
+
             <div class="mt-4 text-xs text-slate-500">
                 Left click & drag to rotate. Scroll to zoom.
             </div>
         </div>
 
         <!-- Explainer Panel -->
-        <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700 p-5 rounded-xl pointer-events-auto max-w-sm w-full shadow-2xl hidden md:block" id="explainer-panel">
+        <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700 p-5 rounded-xl pointer-events-auto max-w-sm w-full shadow-2xl hidden md:block"
+            id="explainer-panel">
             <h2 class="text-lg font-medium text-white mb-2" id="explainer-title">Original Vectors</h2>
             <p class="text-sm text-slate-300 leading-relaxed" id="explainer-text">
-                In geometric space, variables are represented as vectors. The correlation between two variables is the cosine of the angle between their vectors.<br><br>Here we see X, Y, and Z. They are all correlated with each other because they are not perpendicular (orthogonal).
+                In geometric space, variables are represented as vectors. The correlation between two variables is the
+                cosine of the angle between their vectors.<br><br>Here we see X, Y, and Z. They are all correlated with
+                each other because they are not perpendicular (orthogonal).
             </p>
         </div>
     </div>
@@ -87,7 +167,7 @@
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#0f172a');
-        
+
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(3, 2.5, 4);
 
@@ -114,11 +194,11 @@
 
         // We'll define Z as the vertical axis (Y-axis in Three.js) for easy visualization of orthogonal planes.
         // Wait, standard math uses Z as up, Three.js uses Y as up. We'll map Covariate Z to the Three.js Y-axis to make the orthogonal plane the XZ plane.
-        
+
         // --- Vector Definitions ---
         // Let's make them unit vectors.
         const vecZ = new THREE.Vector3(0, 1, 0).normalize();
-        
+
         // X and Y are correlated with Z and with each other.
         const vecX = new THREE.Vector3(0.8, 0.5, 0.3).normalize();
         const vecY = new THREE.Vector3(-0.4, 0.6, 0.7).normalize();
@@ -150,7 +230,7 @@
         }
 
         function createThickLine(p1, p2, color, dashed = false) {
-            const material = dashed 
+            const material = dashed
                 ? new THREE.LineDashedMaterial({ color: color, dashSize: 0.05, gapSize: 0.05 })
                 : new THREE.LineBasicMaterial({ color: color });
             const geometry = new THREE.BufferGeometry().setFromPoints([p1, p2]);
@@ -161,14 +241,14 @@
 
         function createAngleArc(v1, v2, radius, color, labelText) {
             const group = new THREE.Group();
-            
+
             const n1 = v1.clone().normalize();
             const n2 = v2.clone().normalize();
             const angle = n1.angleTo(n2);
-            
+
             let axis = new THREE.Vector3().crossVectors(n1, n2).normalize();
-            if (axis.length() < 0.001) axis.set(0, 1, 0); 
-            
+            if (axis.length() < 0.001) axis.set(0, 1, 0);
+
             const points = [new THREE.Vector3(0, 0, 0)];
             const segments = 32;
             for (let i = 0; i <= segments; i++) {
@@ -176,7 +256,7 @@
                 const p = n1.clone().applyAxisAngle(axis, theta).multiplyScalar(radius);
                 points.push(p);
             }
-            
+
             // Filled Sector
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             const indices = [];
@@ -184,10 +264,10 @@
                 indices.push(0, i, i + 1);
             }
             geometry.setIndex(indices);
-            const material = new THREE.MeshBasicMaterial({ 
-                color: color, 
-                transparent: true, 
-                opacity: 0.2, 
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.2,
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 polygonOffset: true,
@@ -200,23 +280,23 @@
             const lineGeom = new THREE.BufferGeometry().setFromPoints(points.slice(1));
             const lineMat = new THREE.LineBasicMaterial({ color: color });
             group.add(new THREE.Line(lineGeom, lineMat));
-            
+
             if (labelText) {
                 const midTheta = angle / 2;
                 const midP = n1.clone().applyAxisAngle(axis, midTheta).multiplyScalar(radius + 0.1);
-                
+
                 const angleDeg = Math.round(angle * 180 / Math.PI);
-                
+
                 const div = document.createElement('div');
                 div.className = 'correlation-label';
                 div.innerHTML = `θ = ${angleDeg}°<br>${labelText}`;
                 div.style.color = '#' + color.toString(16).padStart(6, '0');
-                
+
                 const label = new CSS2DObject(div);
                 label.position.copy(midP);
                 group.add(label);
             }
-            
+
             return group;
         }
 
@@ -231,7 +311,7 @@
         const arrowZ = createArrow(vecZ, origin, 1, 0x22c55e); // Green
         const arrowX = createArrow(vecX, origin, 1, 0xef4444); // Red
         const arrowY = createArrow(vecY, origin, 1, 0x3b82f6); // Blue
-        
+
         groupStatic.add(arrowZ);
         groupStatic.add(arrowX);
         groupStatic.add(arrowY);
@@ -259,7 +339,7 @@
         groupPartial.add(createThickLine(vecX, projXonZ, 0xef4444, true));
         groupPartial.add(createThickLine(projXonZ, origin, 0x22c55e, true)); // Projection on Z
         groupPartial.add(createThickLine(vecX, resX, 0x94a3b8, true)); // Connect tip to residual
-        
+
         groupPartial.add(createThickLine(vecY, projYonZ, 0x3b82f6, true));
         groupPartial.add(createThickLine(projYonZ, origin, 0x22c55e, true));
         groupPartial.add(createThickLine(vecY, resY, 0x94a3b8, true));
@@ -268,15 +348,15 @@
         // For semi-partial, we want X and residual of Y
         const arrowResY_semi = createArrow(resY, origin, resY.length(), 0x93c5fd);
         groupSemi.add(arrowResY_semi);
-        
+
         const arcSemi = createAngleArc(vecX, resY, 0.4, 0xffffff, `r<sub>semi</sub> = ${rSemi}`);
         groupSemi.add(arcSemi);
-        
+
         // Plane just to show where residual lives
         const orthoPlane_semi = new THREE.Mesh(planeGeometry, planeMaterial);
         orthoPlane_semi.rotation.x = Math.PI / 2;
         groupSemi.add(orthoPlane_semi);
-        
+
         groupSemi.add(createThickLine(vecY, projYonZ, 0x3b82f6, true));
         groupSemi.add(createThickLine(vecY, resY, 0x94a3b8, true));
 
@@ -286,7 +366,7 @@
         const btnPartial = document.getElementById('btn-partial');
         const btnSemi = document.getElementById('btn-semi');
         const dynamicLegend = document.getElementById('legend-dynamic');
-        
+
         const titleEl = document.getElementById('explainer-title');
         const textEl = document.getElementById('explainer-text');
 
@@ -306,13 +386,13 @@
 
         function setMode(mode) {
             resetButtons();
-            
+
             // Hide all
             setGroupVisibility(groupStatic, false);
             setGroupVisibility(groupNone, false);
             setGroupVisibility(groupPartial, false);
             setGroupVisibility(groupSemi, false);
-            
+
             // Reset dynamic legend
             dynamicLegend.innerHTML = '';
 
@@ -320,10 +400,10 @@
                 btnNone.classList.add('btn-active');
                 setGroupVisibility(groupStatic, true);
                 setGroupVisibility(groupNone, true);
-                
+
                 titleEl.innerText = "Original Vectors (Zero-order)";
                 textEl.innerHTML = "In geometric space, variables are represented as vectors. The correlation between two variables is the cosine of the angle between their vectors.<br><br>Here we see <b>X</b>, <b>Y</b>, and the covariate <b>Z</b>. They are all correlated with each other because they are not perpendicular (orthogonal).";
-                
+
             } else if (mode === 'partial') {
                 btnPartial.classList.add('btn-active');
                 arrowZ.visible = true;
@@ -331,9 +411,9 @@
                 arrowY.visible = true;
                 setGroupVisibility(groupStatic, true);
                 setGroupVisibility(groupPartial, true);
-                
+
                 // Dim originals slightly?
-                
+
                 dynamicLegend.innerHTML = `
                     <div class="legend-item mt-2"><div class="legend-color bg-red-300"></div> e<sub>X</sub> (X without Z)</div>
                     <div class="legend-item"><div class="legend-color bg-blue-300"></div> e<sub>Y</sub> (Y without Z)</div>
@@ -343,10 +423,10 @@
                 textEl.innerHTML = "To find the partial correlation between X and Y controlling for Z, we must remove the influence of Z from both.<br><br>We project X and Y onto a plane orthogonal to Z. The resulting vectors (<b>e<sub>X</sub></b> and <b>e<sub>Y</sub></b>) are the residuals.<br><br>The <b>Partial Correlation</b> is the cosine of the angle between these two residual vectors.";
             } else if (mode === 'semi') {
                 btnSemi.classList.add('btn-active');
-                
+
                 // Show X, Z, and Y (Y is needed to show projection)
                 arrowZ.visible = true;
-                arrowX.visible = true; 
+                arrowX.visible = true;
                 arrowY.visible = true;
                 setGroupVisibility(groupStatic, true);
                 setGroupVisibility(groupSemi, true);
@@ -374,7 +454,7 @@
             renderer.render(scene, camera);
             labelRenderer.render(scene, camera);
         }
-        
+
         animate();
 
         // Handle Resize
@@ -387,4 +467,5 @@
 
     </script>
 </body>
+
 </html>
