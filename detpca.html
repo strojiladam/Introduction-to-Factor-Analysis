@@ -208,6 +208,26 @@
     <div class="container">
         <div class="controls">
 
+            <!-- Matrix Type Toggle -->
+            <div
+                style="position: relative; display: flex; background: #e9ecef; border-radius: 8px; overflow: hidden; border: 1px solid #ced4da; margin-bottom: 15px;">
+                <div id="slideBgMatrix"
+                    style="position: absolute; width: 50%; height: 100%; background: #2ecc71; transition: left 0.3s ease; left: 0;">
+                </div>
+                <label
+                    style="flex: 1; text-align: center; padding: 10px; cursor: pointer; position: relative; z-index: 1; color: white; font-weight: bold;"
+                    id="lblCov">
+                    <input type="radio" name="matrixType" value="covariance" checked style="display:none;"
+                        onchange="switchMatrixType()"> Covariance
+                </label>
+                <label
+                    style="flex: 1; text-align: center; padding: 10px; cursor: pointer; position: relative; z-index: 1; color: #495057; font-weight: bold;"
+                    id="lblCor">
+                    <input type="radio" name="matrixType" value="correlation" style="display:none;"
+                        onchange="switchMatrixType()"> Correlation
+                </label>
+            </div>
+
             <!-- Mode Toggle -->
             <div
                 style="position: relative; display: flex; background: #e9ecef; border-radius: 8px; overflow: hidden; border: 1px solid #ced4da;">
@@ -228,13 +248,13 @@
                 </label>
             </div>
 
-            <div class="slider-group">
+            <div class="slider-group" id="groupVarX">
                 <label>Variance X (<span style="font-family:serif;">s<sub>x</sub><sup>2</sup></span>) <span
                         id="valVarX">2.00</span></label>
                 <input type="range" id="varX" min="0.1" max="5.0" step="0.1" value="2.0">
             </div>
 
-            <div class="slider-group">
+            <div class="slider-group" id="groupVarY">
                 <label>Variance Y (<span style="font-family:serif;">s<sub>y</sub><sup>2</sup></span>) <span
                         id="valVarY">2.00</span></label>
                 <input type="range" id="varY" min="0.1" max="5.0" step="0.1" value="2.0">
@@ -265,10 +285,11 @@
 
                 <hr style="border-color: #34495e; width: 100%;">
 
-                <div class="formula-text">Sample Covariance Matrix (S<sub>XX</sub> = <span
-                        id="dynEqSymbol">AA<sup>T</sup></span>)</div>
+                <div class="formula-text"><span id="matrixTitle">Sample Covariance Matrix</span> (<span
+                        class="matrixSymbolText">S<sub>XX</sub></span> = <span id="dynEqSymbol">AA<sup>T</sup></span>)
+                </div>
                 <div class="matrix-container">
-                    S<sub>XX</sub> =
+                    <span class="matrixSymbolText">S<sub>XX</sub></span> =
                     <div class="matrix">
                         <div class="matrix-row">
                             <span class="matrix-cell" id="s00">2.00</span>
@@ -280,10 +301,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="formula-text">Determinant |S<sub>XX</sub>| = <span id="detS" class="highlight-s">3.00</span>
-                    (Generalized Variance)</div>
-                <div class="formula-text" style="color: #ecf0f1; margin-top: 5px;">|S<sub>XX</sub>| = |<span
-                        id="dynProofSymbol">A</span>|² &nbsp; ➔ &nbsp; <span id="mathProof">3.00 = 1.73²</span></div>
+                <div class="formula-text">Determinant |<span class="matrixSymbolText">S<sub>XX</sub></span>| = <span
+                        id="detS" class="highlight-s">3.00</span>
+                    <span id="genVarLabel">(Generalized Variance)</span>
+                </div>
+                <div class="formula-text" style="color: #ecf0f1; margin-top: 5px;">|<span
+                        class="matrixSymbolText">S<sub>XX</sub></span>| = |<span id="dynProofSymbol">A</span>|² &nbsp; ➔
+                    &nbsp; <span id="mathProof">3.00 = 1.73²</span></div>
             </div>
         </div>
 
@@ -349,6 +373,36 @@
             ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2); ctx.stroke();
         }
 
+        function switchMatrixType() {
+            const matrixType = document.querySelector('input[name="matrixType"]:checked').value;
+            const slideBgMatrix = document.getElementById('slideBgMatrix');
+            const lblCov = document.getElementById('lblCov');
+            const lblCor = document.getElementById('lblCor');
+            const varXSlider = document.getElementById('varX');
+            const varYSlider = document.getElementById('varY');
+            const groupVarX = document.getElementById('groupVarX');
+            const groupVarY = document.getElementById('groupVarY');
+
+            if (matrixType === 'covariance') {
+                slideBgMatrix.style.left = '0';
+                lblCov.style.color = 'white'; lblCor.style.color = '#495057';
+                varXSlider.disabled = false; varYSlider.disabled = false;
+                groupVarX.style.opacity = '1'; groupVarY.style.opacity = '1';
+                document.getElementById('matrixTitle').innerText = "Sample Covariance Matrix";
+                document.querySelectorAll('.matrixSymbolText').forEach(el => el.innerHTML = "S<sub>XX</sub>");
+                document.getElementById('genVarLabel').innerText = "(Generalized Variance)";
+            } else {
+                slideBgMatrix.style.left = '50%';
+                lblCor.style.color = 'white'; lblCov.style.color = '#495057';
+                varXSlider.disabled = true; varYSlider.disabled = true;
+                groupVarX.style.opacity = '0.5'; groupVarY.style.opacity = '0.5';
+                document.getElementById('matrixTitle').innerText = "Correlation Matrix";
+                document.querySelectorAll('.matrixSymbolText').forEach(el => el.innerHTML = "R");
+                document.getElementById('genVarLabel').innerText = "";
+            }
+            update();
+        }
+
         function switchMode() {
             const mode = document.querySelector('input[name="mode"]:checked').value;
             const slideBg = document.getElementById('slideBg');
@@ -374,7 +428,14 @@
         function update() {
             let varX = parseFloat(sVarX.value), varY = parseFloat(sVarY.value), corr = parseFloat(sCorr.value);
             let mode = document.querySelector('input[name="mode"]:checked').value;
+            let matrixType = document.querySelector('input[name="matrixType"]:checked').value;
+
             vVarX.innerText = varX.toFixed(2); vVarY.innerText = varY.toFixed(2); vCorr.innerText = corr.toFixed(2);
+
+            if (matrixType === 'correlation') {
+                varX = 1.0;
+                varY = 1.0;
+            }
 
             let covXY = corr * Math.sqrt(varX * varY);
             let detSigma = (varX * varY) - (covXY * covXY);
