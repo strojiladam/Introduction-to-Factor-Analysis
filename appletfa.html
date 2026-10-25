@@ -211,6 +211,18 @@
                 </div>
                 <span class="ml-1 text-sm font-medium text-slate-400" id="label-oblique">Oblique</span>
             </div>
+
+            <!-- Standardization Mode Toggle -->
+            <div class="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                <span class="mr-3 text-sm font-medium text-slate-600" id="label-unstd">Unstandardized</span>
+                <div class="relative inline-block w-11 mr-2 align-middle select-none">
+                    <input type="checkbox" id="std-toggle"
+                        class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-transform duration-300 ease-in-out z-10 top-0.5" />
+                    <label for="std-toggle"
+                        class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                </div>
+                <span class="ml-1 text-sm font-medium text-slate-400" id="label-std">Standardized</span>
+            </div>
         </div>
 
         <!-- Navigation Buttons -->
@@ -270,9 +282,9 @@
 
                 <div class="operator">\(=\)</div>
 
-                <!-- Sigma Matrix -->
+                <!-- Sigma / R Matrix -->
                 <div class="matrix-wrapper">
-                    <span class="matrix-label text-purple-700">\(\Sigma\)</span>
+                    <span class="matrix-label text-purple-700" id="matrix-result-label">\(\Sigma\)</span>
                     <div class="matrix-container bg-white shadow-sm border border-purple-200 rounded">
                         <div class="grid grid-cols-4 gap-1" id="matrix-sigma"></div>
                     </div>
@@ -307,27 +319,50 @@
         // Application State
         let isOrthogonal = true;
         let isNumeric = false;
+        let isStandardized = false;
         let currentStepIndex = 0;
         let mathJaxQueue = Promise.resolve(); // Queue to prevent overlapping MathJax errors
 
-        // Concrete Numeric Data
-        const numLambda = [
+        // 1. Standardized Concrete Numeric Data
+        // Common factor loadings (standardized)
+        const numLambdaStd = [
             [0.80, 0.10],
             [0.70, 0.20],
             [0.10, 0.90],
             [0.20, 0.80]
         ];
+        // Standardized uniqueness for orthogonal (diag = 1.00)
+        const numPsiStdOrtho = [0.35, 0.47, 0.18, 0.32];
+        // Standardized uniqueness for oblique with phi12 = 0.50 (diag = 1.00)
+        // h^2 = [0.73, 0.67, 0.91, 0.84] -> psi = 1 - h^2
+        const numPsiStdOblique = [0.27, 0.33, 0.09, 0.16];
+
+        // 2. Unstandardized Concrete Numeric Data (Item variances: 4.00, 9.00, 2.25, 6.25; s = [2.0, 3.0, 1.5, 2.5])
+        const numLambdaUnstd = [
+            [1.60, 0.20],
+            [2.10, 0.60],
+            [0.15, 1.35],
+            [0.50, 2.00]
+        ];
+        // Unstandardized uniqueness for orthogonal (s^2 * psi_std_ortho)
+        const numPsiUnstdOrtho = [1.40, 4.23, 0.41, 2.00];
+        // Unstandardized uniqueness for oblique (s^2 * psi_std_oblique)
+        const numPsiUnstdOblique = [1.08, 2.97, 0.20, 1.00];
+
+        // Oblique Factor Correlations (Phi)
         const numPhiOblique = [
             [1.00, 0.50],
             [0.50, 1.00]
         ];
-        const numPsi = [0.35, 0.47, 0.18, 0.32]; // Unique variances
 
-        // Calculate Sigma specific value dynamically for Concrete Mode
-        function calcSigma(r, c) {
-            const L = numLambda;
+        // Calculate Result Matrix (Sigma or R) specific value dynamically for Concrete Mode
+        function calcResultMatrix(r, c) {
+            const L = isStandardized ? numLambdaStd : numLambdaUnstd;
             const P = isOrthogonal ? [[1, 0], [0, 1]] : numPhiOblique;
-            const U = (r === c) ? numPsi[r - 1] : 0;
+            const psiList = isStandardized
+                ? (isOrthogonal ? numPsiStdOrtho : numPsiStdOblique)
+                : (isOrthogonal ? numPsiUnstdOrtho : numPsiUnstdOblique);
+            const U = (r === c) ? psiList[r - 1] : 0;
 
             let sum = 0;
             sum += L[r - 1][0] * P[0][0] * L[c - 1][0];
@@ -347,13 +382,35 @@
         }
 
         // Helpers to generate LaTeX strings based on current mode
-        const getLambda = (r, c) => isNumeric ? numLambda[r - 1][c - 1].toFixed(2) : `\\lambda_{${r}${c}}`;
+        const getLambda = (r, c) => {
+            if (!isNumeric) return `\\lambda_{${r}${c}}`;
+            const L = isStandardized ? numLambdaStd : numLambdaUnstd;
+            return L[r - 1][c - 1].toFixed(2);
+        };
+
         const getPhi = (r, c) => {
             if (isOrthogonal) return r === c ? "1" : "0";
             return isNumeric ? numPhiOblique[r - 1][c - 1].toFixed(2) : (r === c ? "1" : `\\phi_{${r}${c}}`);
         };
-        const getPsi = (r) => isNumeric ? numPsi[r - 1].toFixed(2) : `\\psi_{${r}}`;
-        const getSigma = (r, c) => isNumeric ? calcSigma(r, c) : `\\sigma_{${r}${c}}`;
+
+        const getPsi = (r) => {
+            if (!isNumeric) return `\\psi_{${r}}`;
+            const psiList = isStandardized
+                ? (isOrthogonal ? numPsiStdOrtho : numPsiStdOblique)
+                : (isOrthogonal ? numPsiUnstdOrtho : numPsiUnstdOblique);
+            return psiList[r - 1].toFixed(2);
+        };
+
+        const getResultCell = (r, c) => {
+            if (isNumeric) {
+                return calcResultMatrix(r, c);
+            }
+            if (isStandardized) {
+                return r === c ? "1" : `r_{${r}${c}}`;
+            } else {
+                return `\\sigma_{${r}${c}}`;
+            }
+        };
 
         function buildMatricesDOM() {
             // Lambda
@@ -393,16 +450,17 @@
             }
             document.getElementById('matrix-psi').innerHTML = htmlPsi;
 
-            // Sigma
-            let htmlSigma = '';
+            // Result Matrix (Sigma or R)
+            let htmlResult = '';
             for (let r = 1; r <= nVars; r++) {
                 for (let c = 1; c <= nVars; c++) {
-                    htmlSigma += `<div class="matrix-cell sigma-cell" data-matrix="sigma" data-row="${r}" data-col="${c}">\\(${getSigma(r, c)}\\)</div>`;
+                    const isMutedDiag = r === c && isStandardized && !isNumeric;
+                    htmlResult += `<div class="matrix-cell sigma-cell ${isMutedDiag ? 'text-slate-400' : ''}" data-matrix="sigma" data-row="${r}" data-col="${c}">\\(${getResultCell(r, c)}\\)</div>`;
                 }
             }
-            document.getElementById('matrix-sigma').innerHTML = htmlSigma;
+            document.getElementById('matrix-sigma').innerHTML = htmlResult;
 
-            // Attach listeners to interactive sigma cells
+            // Attach listeners to interactive result cells
             document.querySelectorAll('.sigma-cell').forEach((cell, index) => {
                 cell.addEventListener('click', () => {
                     currentStepIndex = index;
@@ -424,9 +482,26 @@
             document.getElementById('btn-next').disabled = currentStepIndex === steps.length - 1;
 
             // Build Title with MathJax
-            const typeStr = step.isVar ? `Variance of Item ${r}` : `Covariance (Item ${r}, Item ${c})`;
-            // Using standard color name 'purple' to avoid macro errors
-            document.getElementById('eq-title').innerHTML = `\\(\\color{purple}{\\sigma_{${r}${c}}}\\) [${typeStr}]`;
+            let typeStr = '';
+            let symbolStr = '';
+            if (isStandardized) {
+                typeStr = step.isVar ? `Item ${r} Variance (= 1.00)` : `Correlation (Item ${r}, Item ${c})`;
+                symbolStr = step.isVar ? `r_{${r}${r}} = 1` : `r_{${r}${c}}`;
+            } else {
+                typeStr = step.isVar ? `Variance of Item ${r}` : `Covariance (Item ${r}, Item ${c})`;
+                symbolStr = `\\sigma_{${r}${c}}`;
+            }
+            const eqTitleEl = document.getElementById('eq-title');
+            const eqDisplayEl = document.getElementById('equation-display');
+
+            // Clear MathJax items in dynamic equation containers BEFORE modifying innerHTML
+            if (window.MathJax && typeof MathJax.typesetClear === 'function') {
+                try {
+                    MathJax.typesetClear([eqTitleEl, eqDisplayEl]);
+                } catch (e) {}
+            }
+
+            eqTitleEl.innerHTML = `\\(\\color{purple}{${symbolStr}}\\) [${typeStr}]`;
 
             // Apply HTML Class Highlights
             document.querySelector(`[data-matrix="sigma"][data-row="${r}"][data-col="${c}"]`).classList.add('highlight-sigma');
@@ -441,8 +516,12 @@
                 document.querySelectorAll(`[data-matrix="phi"]`).forEach(el => el.classList.add('highlight-phi'));
             }
 
-            // Build Equation using STANDARD LaTeX colors ONLY (CRITICAL FIX)
-            let eqLatex = `\\[ \\color{purple}{${getSigma(r, c)}} = `;
+            // Build Equation using STANDARD LaTeX colors ONLY
+            const leftSymbol = isNumeric
+                ? calcResultMatrix(r, c)
+                : (isStandardized ? (step.isVar ? "1" : `r_{${r}${c}}`) : `\\sigma_{${r}${c}}`);
+
+            let eqLatex = `\\[ \\color{purple}{${leftSymbol}} = `;
 
             if (isOrthogonal) {
                 eqLatex += `(\\color{blue}{${getLambda(r, 1)}} \\cdot \\color{red}{${getLambda(c, 1)}}) + `;
@@ -460,23 +539,31 @@
 
             eqLatex += ` \\]`;
 
-            document.getElementById('equation-display').innerHTML = eqLatex;
+            eqDisplayEl.innerHTML = eqLatex;
 
             // Trigger MathJax render for specific dynamic areas safely via queue
-            if (window.MathJax && MathJax.typesetPromise) {
-                mathJaxQueue = mathJaxQueue.then(() => {
-                    return MathJax.typesetPromise([
-                        document.getElementById('eq-title'),
-                        document.getElementById('equation-display')
-                    ]);
-                }).catch((err) => console.log('MathJax typeset error:', err));
-            }
+            mathJaxQueue = mathJaxQueue.then(() => {
+                if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                    return MathJax.typesetPromise([eqTitleEl, eqDisplayEl]);
+                }
+            }).catch((err) => console.log('MathJax typeset error in updateVisualization:', err));
         }
 
         function syncUIAndRender() {
-            // Update Header Formula (using Psi instead of Theta)
+            // First clear all existing MathJax items from document before touching innerHTML
+            if (window.MathJax && typeof MathJax.typesetClear === 'function') {
+                try {
+                    MathJax.typesetClear();
+                } catch (e) {}
+            }
+
+            // Update Header Formula (using R for Standardized, Sigma for Unstandardized)
             const formulaDiv = document.getElementById('formula-display');
-            formulaDiv.innerHTML = isOrthogonal ? `\\(\\Sigma = \\Lambda\\Lambda' + \\Psi\\)` : `\\(\\Sigma = \\Lambda\\Phi\\Lambda' + \\Psi\\)`;
+            const resSym = isStandardized ? 'R' : '\\Sigma';
+            formulaDiv.innerHTML = isOrthogonal ? `\\(${resSym} = \\Lambda\\Lambda' + \\Psi\\)` : `\\(${resSym} = \\Lambda\\Phi\\Lambda' + \\Psi\\)`;
+
+            // Update Result Matrix Label (inside matrix-canvas)
+            document.getElementById('matrix-result-label').innerHTML = `\\(${resSym}\\)`;
 
             // Update Label Styles
             document.getElementById('label-abstract').className = !isNumeric ? "mr-3 text-sm font-medium text-slate-800" : "mr-3 text-sm font-medium text-slate-400";
@@ -484,6 +571,9 @@
 
             document.getElementById('label-ortho').className = isOrthogonal ? "mr-3 text-sm font-medium text-slate-800" : "mr-3 text-sm font-medium text-slate-400";
             document.getElementById('label-oblique').className = !isOrthogonal ? "ml-1 text-sm font-medium text-slate-800" : "ml-1 text-sm font-medium text-slate-400";
+
+            document.getElementById('label-unstd').className = !isStandardized ? "mr-3 text-sm font-medium text-slate-800" : "mr-3 text-sm font-medium text-slate-400";
+            document.getElementById('label-std').className = isStandardized ? "ml-1 text-sm font-medium text-slate-800" : "ml-1 text-sm font-medium text-slate-400";
 
             // Handle Oblique UI toggles
             const wrapperPhi = document.getElementById('wrapper-phi');
@@ -506,20 +596,18 @@
             // Rebuild DOM with new symbols/numbers
             buildMatricesDOM();
 
-            // Queue full canvas MathJax re-render
-            if (window.MathJax && MathJax.typesetPromise) {
-                mathJaxQueue = mathJaxQueue.then(() => {
+            // Queue full canvas and formula MathJax re-render
+            mathJaxQueue = mathJaxQueue.then(() => {
+                if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
                     return MathJax.typesetPromise([
                         document.getElementById('formula-display'),
                         document.getElementById('matrix-canvas')
                     ]);
-                }).then(() => {
-                    // Update highlights and equations after matrices finish rendering
-                    updateVisualization();
-                }).catch((err) => console.log('MathJax typeset error:', err));
-            } else {
+                }
+            }).then(() => {
+                // Update highlights and equations after matrices finish rendering
                 updateVisualization();
-            }
+            }).catch((err) => console.log('MathJax typeset error in syncUIAndRender:', err));
         }
 
         // Listeners for Toggles
@@ -530,6 +618,11 @@
 
         document.getElementById('data-toggle').addEventListener('change', (e) => {
             isNumeric = e.target.checked;
+            syncUIAndRender();
+        });
+
+        document.getElementById('std-toggle').addEventListener('change', (e) => {
+            isStandardized = e.target.checked;
             syncUIAndRender();
         });
 
@@ -555,9 +648,14 @@
             // Force checkbox reset (browsers sometimes cache input state)
             document.getElementById('mode-toggle').checked = false;
             document.getElementById('data-toggle').checked = false;
+            document.getElementById('std-toggle').checked = false;
 
-            // Wait slightly for MathJax to initialize its global object on fast loads
-            setTimeout(syncUIAndRender, 150);
+            // Wait for MathJax to be ready
+            if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+                MathJax.startup.promise.then(syncUIAndRender);
+            } else {
+                setTimeout(syncUIAndRender, 200);
+            }
         });
 
     </script>
